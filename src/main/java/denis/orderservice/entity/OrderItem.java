@@ -16,7 +16,7 @@ public class OrderItem extends Auditable {
     @Id
     @GeneratedValue
     private UUID id;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
     @ManyToOne

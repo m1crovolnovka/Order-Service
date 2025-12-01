@@ -1,8 +1,12 @@
 package denis.orderservice.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.SoftDelete;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -14,12 +18,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Builder
 @AllArgsConstructor
+@SoftDelete(columnName = "deleted")
 public class Order {
     @Id
     @GeneratedValue
     private UUID id;
     private UUID userId;
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
     private BigDecimal totalPrice;
     private Boolean deleted;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
