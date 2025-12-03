@@ -1,5 +1,8 @@
 package denis.orderservice.service;
 
+import denis.orderservice.dto.request.OrderRequestDto;
+import denis.orderservice.dto.request.OrderUpdateRequestDto;
+import denis.orderservice.dto.response.OrderResponseDto;
 import denis.orderservice.entity.Order;
 import denis.orderservice.entity.OrderStatus;
 import org.springframework.data.domain.Page;
@@ -10,10 +13,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface OrderService {
-    Order create(Order order);
-    Order getById(UUID id);
-    Page<Order> getAll(LocalDateTime from, LocalDateTime to, List<OrderStatus> statuses, Pageable pageable);
-    Page<Order> getByUserId(UUID userId, Pageable pageable);
-    Order update(UUID id, Order update);
+    OrderResponseDto create(OrderRequestDto orderRequestDto);
+    OrderResponseDto  getById(UUID id);
+    Page<OrderResponseDto> getAll(LocalDateTime from, LocalDateTime to, List<OrderStatus> statuses, Pageable pageable);
+    Page<OrderResponseDto> getByUserId(UUID userId, Pageable pageable);
+    OrderResponseDto  update(UUID id, OrderUpdateRequestDto dto);
     void delete(UUID id);
 }

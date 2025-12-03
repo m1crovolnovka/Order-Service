@@ -1,69 +1,125 @@
 package denis.orderservice.service.impl;
 
+import denis.orderservice.client.UserServiceClient;
+import denis.orderservice.dto.request.OrderRequestDto;
+import denis.orderservice.dto.request.OrderUpdateRequestDto;
+import denis.orderservice.dto.response.OrderResponseDto;
+import denis.orderservice.dto.response.UserInfoDto;
+import denis.orderservice.entity.Item;
 import denis.orderservice.entity.Order;
+import denis.orderservice.entity.OrderItem;
 import denis.orderservice.entity.OrderStatus;
+import denis.orderservice.mapper.OrderItemMapper;
+import denis.orderservice.mapper.OrderMapper;
+import denis.orderservice.repository.ItemRepository;
 import denis.orderservice.repository.OrderRepository;
 import denis.orderservice.repository.specification.OrderSpecifications;
 import denis.orderservice.service.OrderService;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
+    private final ItemRepository itemRepository;
+    private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
+    private final UserServiceClient userClient;
+
+    public OrderServiceImpl(OrderRepository orderRepository,
+                            ItemRepository itemRepository,
+                            OrderMapper orderMapper,
+                            OrderItemMapper orderItemMapper,
+                            UserServiceClient userClient) {
+        this.orderRepository = orderRepository;
+        this.itemRepository = itemRepository;
+        this.orderMapper = orderMapper;
+        this.orderItemMapper = orderItemMapper;
+        this.userClient = userClient;
+    }
 
     @Transactional
     @Override
-    public Order create(Order order) {
-        order.getItems().forEach(i -> i.setOrder(order));
-        return orderRepository.save(order);
+    public OrderResponseDto  create(OrderRequestDto dto) {
+        Order order = orderMapper.toEntity(dto);
+        BigDecimal total = BigDecimal.ZERO;
+        for (OrderItem oi : order.getItems()) {
+            Item item = itemRepository.findById(oi.getItem().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Item not found: " + oi.getItem().getId()));//написать свою exc
+            oi.setItem(item);
+            total = total.add(item.getPrice().multiply(BigDecimal.valueOf(oi.getQuantity())));
+        }
+        order.setTotalPrice(total);
+        Order saved = orderRepository.save(order);
+        UserInfoDto user = userClient.getUserById(saved.getUserId());
+        return orderMapper.toDto(saved, user);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public Order getById(UUID id) {
-        return orderRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
+    public OrderResponseDto  getById(UUID id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));//написать свою exc
+        UserInfoDto user = userClient.getUserById(order.getUserId());
+        return orderMapper.toDto(order, user);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public Page<Order> getAll(LocalDateTime from,
+    public Page<OrderResponseDto> getAll(LocalDateTime from,
                               LocalDateTime to,
                               List<OrderStatus> statuses,
                               Pageable pageable) {
+
         Specification<Order> spec = Specification.unrestricted();
         spec = spec.and(OrderSpecifications.hasStatuses(statuses))
                 .and(OrderSpecifications.createdAfter(from))
                 .and(OrderSpecifications.createdBefore(to));
-        return orderRepository.findAll(spec, pageable);
+        Page<Order> page = orderRepository.findAll(spec, pageable);
+        return page.map(order -> {
+            UserInfoDto user = userClient.getUserById(order.getUserId());
+            return orderMapper.toDto(order, user);
+        });
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public Page<Order> getByUserId(UUID userId, Pageable pageable) {
-        return orderRepository.findAllByUserId(userId, pageable);
+    public Page<OrderResponseDto> getByUserId(UUID userId, Pageable pageable) {
+        Page<Order> page = orderRepository.findAllByUserId(userId,pageable);
+        UserInfoDto user = userClient.getUserById(userId);
+        return page.map( order -> orderMapper.toDto(order, user));
     }
 
     @Transactional
     @Override
-    public Order update(UUID id, Order data) {
-        Order order = getById(id);
-        order.setStatus(data.getStatus());
-        order.setTotalPrice(data.getTotalPrice());
+    public OrderResponseDto update(UUID id, OrderUpdateRequestDto dto) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));//написать свою exc
+        order.setStatus(dto.status());
         order.getItems().clear();
-        data.getItems().forEach(i -> {
-            i.setOrder(order);
-            order.getItems().add(i);
-        });
-        return orderRepository.save(order);
+        List<OrderItem> updatedItems = dto.items().stream().map(orderItemMapper::toEntity).toList();
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (OrderItem oi : updatedItems) {
+            Item item = itemRepository.findById(oi.getItem().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Item not found: " + oi.getItem().getId()));//написать свою exc
+            oi.setItem(item);
+            total = total.add(item.getPrice().multiply(BigDecimal.valueOf(oi.getQuantity())));
+        }
+        order.setTotalPrice(total);
+        order.getItems().addAll(updatedItems);
+        Order saved = orderRepository.save(order);
+        UserInfoDto user = userClient.getUserById(order.getUserId());
+        return orderMapper.toDto(saved, user);
     }
 
     @Transactional
