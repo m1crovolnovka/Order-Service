@@ -21,12 +21,12 @@ public interface UserServiceClient {
     @CircuitBreaker(name = CB_NAME, fallbackMethod = "getUserByIdFallback")
      UserInfoDto getUserById(@PathVariable("id") UUID id);
 
-    default UserInfoDto getUserByIdFallback(String email, Throwable ex) {
+    default UserInfoDto getUserByIdFallback(UUID id, Throwable ex) {
         return UserInfoDto.builder()
-                .id(null)
+                .id(id)
                 .name("Unknown")
                 .surname("User")
-                .email(email)
+                .email("user@gmail.com")
                 .build();
     }
 }

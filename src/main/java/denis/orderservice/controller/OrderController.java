@@ -39,7 +39,7 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponseDto> createOrder(@RequestBody @Valid OrderRequestDto dto) {
         OrderResponseDto response = orderService.create(dto);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{id}")
@@ -53,7 +53,7 @@ public class OrderController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             @RequestParam(required = false) List<OrderStatus> statuses,
-            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            Pageable pageable) {
 
         Page<OrderResponseDto> page = orderService.getAll(from, to, statuses, pageable);
         return ResponseEntity.ok(page);
@@ -62,7 +62,7 @@ public class OrderController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<Page<OrderResponseDto>> getOrdersByUserId(
             @PathVariable UUID userId,
-            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            Pageable pageable) {
 
         Page<OrderResponseDto> page = orderService.getByUserId(userId, pageable);
         return ResponseEntity.ok(page);
