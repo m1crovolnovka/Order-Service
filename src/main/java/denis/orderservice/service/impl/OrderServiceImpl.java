@@ -9,6 +9,8 @@ import denis.orderservice.entity.Item;
 import denis.orderservice.entity.Order;
 import denis.orderservice.entity.OrderItem;
 import denis.orderservice.entity.OrderStatus;
+import denis.orderservice.exception.ItemNotFoundException;
+import denis.orderservice.exception.OrderNotFoundException;
 import denis.orderservice.mapper.OrderItemMapper;
 import denis.orderservice.mapper.OrderMapper;
 import denis.orderservice.repository.ItemRepository;
@@ -20,7 +22,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,7 +55,7 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal total = BigDecimal.ZERO;
         for (OrderItem oi : order.getItems()) {
             Item item = itemRepository.findById(oi.getItem().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Item not found: " + oi.getItem().getId()));//написать свою exc
+                    .orElseThrow(() -> new ItemNotFoundException("Item not found: " + oi.getItem().getId()));
             oi.setItem(item);
             total = total.add(item.getPrice().multiply(BigDecimal.valueOf(oi.getQuantity())));
         }
@@ -68,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponseDto  getById(UUID id) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));//написать свою exc
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
         UserInfoDto user = userClient.getUserById(order.getUserId());
         return orderMapper.toDto(order, user);
     }
@@ -103,7 +104,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponseDto update(UUID id, OrderUpdateRequestDto dto) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));//написать свою exc
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
         order.setStatus(dto.status());
         order.getItems().clear();
         List<OrderItem> updatedItems = dto.items().stream().map(orderItemMapper::toEntity).toList();
@@ -111,7 +112,7 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal total = BigDecimal.ZERO;
         for (OrderItem oi : updatedItems) {
             Item item = itemRepository.findById(oi.getItem().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Item not found: " + oi.getItem().getId()));//написать свою exc
+                    .orElseThrow(() -> new ItemNotFoundException("Item not found: " + oi.getItem().getId()));
             oi.setItem(item);
             total = total.add(item.getPrice().multiply(BigDecimal.valueOf(oi.getQuantity())));
         }
