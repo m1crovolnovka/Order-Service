@@ -11,7 +11,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      # ⚠️ Двойные знаки доллара (CME-SHELL) корректно передают внутренние переменные.
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
@@ -28,7 +27,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # 💡 Дополнительные переменные, которые могут не присутствовать в application-docker.properties:
     environment:
       client.user-service.url: http://host.docker.internal:8081
 
