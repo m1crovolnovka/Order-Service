@@ -34,7 +34,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/orders/{id}").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/orders/{id}").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/orders/{id}").authenticated()
-                        .requestMatchers(HttpMethod.GET,"/api/orders/{userId}").authenticated()
+                        .requestMatchers(HttpMethod.GET,"/api/orders/user/{userId}").authenticated()
 
                         .requestMatchers(HttpMethod.GET,"/api/orders").hasAuthority("ADMIN")
 
