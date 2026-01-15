@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public record OrderItemResponseDto(
         UUID id,
-        UUID itemId,
+        ItemResponseDto item,
         Integer quantity
 ) {}
 

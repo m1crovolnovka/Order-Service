@@ -4,8 +4,9 @@ import denis.orderservice.dto.request.OrderItemRequestDto;
 import denis.orderservice.dto.response.OrderItemResponseDto;
 import denis.orderservice.entity.OrderItem;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring",  uses = {ItemMapper.class})
 public interface OrderItemMapper {
 
     OrderItem toEntity(OrderItemRequestDto dto);

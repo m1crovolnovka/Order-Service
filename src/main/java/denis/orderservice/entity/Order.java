@@ -19,7 +19,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @SoftDelete(columnName = "deleted")
-public class Order {
+public class Order extends Auditable {
     @Id
     @GeneratedValue
     private UUID id;
