@@ -1,6 +1,9 @@
 package denis.orderservice.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import denis.orderservice.client.UserServiceClient;
+import denis.orderservice.dto.kafka.PaymentRequestDto;
 import denis.orderservice.dto.request.OrderItemRequestDto;
 import denis.orderservice.dto.request.OrderRequestDto;
 import denis.orderservice.dto.request.OrderUpdateRequestDto;
@@ -22,6 +25,7 @@ import denis.orderservice.service.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -34,23 +38,24 @@ import java.util.UUID;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
     private final ItemRepository itemRepository;
     private final OrderMapper orderMapper;
-    private final OrderItemMapper orderItemMapper;
     private final UserServiceClient userClient;
+    private final ObjectMapper objectMapper;
+    private final KafkaTemplate<String, byte[]> kafkaTemplate;
 
-    public OrderServiceImpl(OrderRepository orderRepository, OrderItemRepository orderItemRepository,
+    public OrderServiceImpl(OrderRepository orderRepository,
                             ItemRepository itemRepository,
                             OrderMapper orderMapper,
-                            OrderItemMapper orderItemMapper,
-                            UserServiceClient userClient) {
+                            UserServiceClient userClient,
+                            ObjectMapper objectMapper,
+                            KafkaTemplate<String, byte[]> kafkaTemplate) {
         this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
         this.itemRepository = itemRepository;
         this.orderMapper = orderMapper;
-        this.orderItemMapper = orderItemMapper;
         this.userClient = userClient;
+        this.objectMapper = objectMapper;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     @Transactional
@@ -76,8 +81,32 @@ public class OrderServiceImpl implements OrderService {
         }
         order.setTotalPrice(total);
         Order saved = orderRepository.save(order);
+        sendKafkaMessage(saved);
         UserInfoDto user = userClient.getUserById(saved.getUserId());
         return orderMapper.toDto(saved, user);
+    }
+
+    private void sendKafkaMessage(Order order){
+        PaymentRequestDto paymentRequest = new PaymentRequestDto(order.getId(),order.getUserId(),order.getTotalPrice());
+        try {
+            byte[] data = objectMapper.writeValueAsBytes(paymentRequest);
+            kafkaTemplate.send("payment-requests", order.getId().toString(), data);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Mapping error", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateStatusFromPayment(UUID orderId, String paymentStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        if ("SUCCESS".equals(paymentStatus)) {
+            order.setStatus(OrderStatus.COMPLETED);
+        } else {
+            order.setStatus(OrderStatus.CANCELED);
+        }
+        orderRepository.save(order);
     }
 
     @Transactional(readOnly = true)

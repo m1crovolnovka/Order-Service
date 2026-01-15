@@ -19,4 +19,5 @@ public interface OrderService {
     Page<OrderResponseDto> getByUserId(UUID userId, Pageable pageable);
     OrderResponseDto  update(UUID id, OrderUpdateRequestDto dto);
     void delete(UUID id);
+    void updateStatusFromPayment(UUID orderId, String paymentStatus);
 }

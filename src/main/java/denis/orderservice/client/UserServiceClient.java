@@ -1,6 +1,7 @@
 package denis.orderservice.client;
 
 import denis.orderservice.dto.response.UserInfoDto;
+import denis.orderservice.exception.ExternalServiceException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,11 +23,6 @@ public interface UserServiceClient {
      UserInfoDto getUserById(@PathVariable("id") UUID id);
 
     default UserInfoDto getUserByIdFallback(UUID id, Throwable ex) {
-        return UserInfoDto.builder()
-                .id(id)
-                .name("Unknown")
-                .surname("User")
-                .email("user@gmail.com")
-                .build();
+        throw new ExternalServiceException("User Service is currently unavailable. Order flow interrupted.");
     }
 }
