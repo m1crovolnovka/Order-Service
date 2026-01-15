@@ -19,7 +19,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @SoftDelete(columnName = "deleted")
-public class Order {
+public class Order extends Auditable {
     @Id
     @GeneratedValue
     private UUID id;
@@ -27,7 +27,6 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
     private BigDecimal totalPrice;
-    private Boolean deleted;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items;
 }
