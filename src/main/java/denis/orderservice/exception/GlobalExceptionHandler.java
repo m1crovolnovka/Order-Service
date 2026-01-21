@@ -26,6 +26,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleValidationExceptions(ExpiredJwtException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<String> handleExternalServiceExceptions(ExternalServiceException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGeneralExceptions(Exception ex) {
