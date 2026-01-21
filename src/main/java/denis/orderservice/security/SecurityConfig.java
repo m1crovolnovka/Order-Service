@@ -4,6 +4,7 @@ package denis.orderservice.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -13,6 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
 
@@ -30,19 +32,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**").permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
+                        .requestMatchers("/actuator/info").permitAll()
 
-                        .requestMatchers(HttpMethod.POST,"/api/orders").authenticated()
-
-                        .requestMatchers(HttpMethod.GET, "/api/orders/{id}").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/orders/{id}").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/orders/{id}").authenticated()
-                        .requestMatchers(HttpMethod.GET,"/api/orders/user/{userId}").authenticated()
-
-                        .requestMatchers(HttpMethod.GET,"/api/orders").hasAuthority("ADMIN")
-
-                        .requestMatchers("/api/items/**").hasAuthority("ADMIN")
-                        //item getAll и getById возможно нужно сделать доступным всем
-                        .anyRequest().hasAuthority("ADMIN")
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

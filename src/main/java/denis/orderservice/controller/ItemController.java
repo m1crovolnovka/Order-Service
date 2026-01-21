@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
@@ -22,30 +23,35 @@ public class ItemController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ItemResponseDto> createItem(@RequestBody @Valid ItemRequestDto dto) {
         ItemResponseDto newItem = itemService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(newItem);
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<ItemResponseDto>> getAllItems(Pageable pageable) {
         Page<ItemResponseDto> items = itemService.getAll(pageable);
         return ResponseEntity.ok(items);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ItemResponseDto> getItemById(@PathVariable UUID id) {
         ItemResponseDto item = itemService.getById(id);
         return ResponseEntity.ok(item);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ItemResponseDto> updateItem(@PathVariable UUID id, @RequestBody @Valid ItemRequestDto dto) {
         ItemResponseDto updatedItem = itemService.update(id, dto);
         return ResponseEntity.ok(updatedItem);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deleteItem(@PathVariable UUID id) {
         itemService.delete(id);
         return ResponseEntity.noContent().build();
